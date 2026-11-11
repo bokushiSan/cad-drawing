@@ -1,7 +1,9 @@
 from src.drawing_finder import get_drawings
 from src.image_loader import load_image
+from src.preprocessor import to_grayscale, binarize
 from pathlib import Path
 import sys
+import cv2
 
 
 def main():
@@ -12,7 +14,7 @@ def main():
     input_dir = Path(sys.argv[1])
     output_dir = Path(sys.argv[2])
 
-    if not input_dir.exists():
+    if not input_dir.is_dir():
         print("Папка input не найдена")
         sys.exit(1)
 
@@ -23,7 +25,21 @@ def main():
 
     for drawing in drawings:
         image = load_image(drawing)
-        print(f"Чертеж детали {drawing.stem} загружен. Размер полученного массива: {image.shape}")
+        image_gray = to_grayscale(image)
+        threshold_value, image_binary = binarize(image_gray)
+        print(f"Чертеж детали {drawing.stem} прочитан.")
+        print(f"Размер полученного массива: {image.shape}.")
+        print(f"Размер бинарного массива: {image_binary.shape}. Трешхолд: {threshold_value}.")
+        
+        drawing_parent_dir = drawing.relative_to(input_dir).parent
+        drawing_dir = output_dir / drawing_parent_dir
+        drawing_dir.mkdir(parents=True, exist_ok=True)
+        result_path = drawing_dir / f"{drawing.stem}.png"
+
+        cv2.imwrite(result_path, image_binary)
+
+        print(f"Чертеж детали {drawing.stem} сохранен.")
+        print("---------------")
 
 if __name__ == "__main__":
     main()
