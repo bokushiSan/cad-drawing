@@ -1,9 +1,11 @@
 from src.drawing_finder import get_drawings
 from src.image_loader import load_image
 from src.preprocessor import to_grayscale, binarize
+from src.line_analyzer import calculate_distance, calculate_skeleton, get_thickness
 from pathlib import Path
 import sys
 import cv2
+import numpy as np
 
 
 def main():
@@ -27,6 +29,7 @@ def main():
         image = load_image(drawing)
         image_gray = to_grayscale(image)
         threshold_value, image_binary = binarize(image_gray)
+        print(drawing)
         print(f"Чертеж детали {drawing.stem} прочитан.")
         print(f"Размер полученного массива: {image.shape}.")
         print(f"Размер бинарного массива: {image_binary.shape}. Трешхолд: {threshold_value}.")
@@ -34,9 +37,34 @@ def main():
         drawing_parent_dir = drawing.relative_to(input_dir).parent
         drawing_dir = output_dir / drawing_parent_dir
         drawing_dir.mkdir(parents=True, exist_ok=True)
-        result_path = drawing_dir / f"{drawing.stem}.png"
 
-        cv2.imwrite(result_path, image_binary)
+        cv2.imwrite(drawing_dir / "binary.png", image_binary)
+
+        distance = calculate_distance(image_binary)
+        skeleton = calculate_skeleton(image_binary)
+        thickness = get_thickness(distance, skeleton)
+
+        if thickness.size > 0:
+            print("Линии обнаружены.")
+            print(f"Медиана: {np.median(thickness):.2f} px")
+            print(f"25-й процентиль: {np.percentile(thickness, 25):.2f} px")
+            print(f"75-й процентиль: {np.percentile(thickness, 75):.2f} px")
+            print(f"90-й процентиль: {np.percentile(thickness, 90):.2f} px")
+            counts, edges = np.histogram(
+                thickness,
+                bins=[0, 2, 4, 6, 8, 10, 15, 20, np.inf],
+            )
+
+            for left, right, count in zip(edges[:-1], edges[1:], counts):
+                print(f"{left:.0f}–{right:.0f} px: {count}")
+        else:
+            print("Линии не обнаружены.")
+
+        distance_png = cv2.normalize(distance, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+
+        cv2.imwrite(drawing_dir / "distance.png", distance_png)
+
+        print(f"Расстояние посчитано.")
 
         print(f"Чертеж детали {drawing.stem} сохранен.")
         print("---------------")
