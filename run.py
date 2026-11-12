@@ -1,7 +1,7 @@
 from src.drawing_finder import get_drawings
 from src.image_loader import load_image
 from src.preprocessor import to_grayscale, binarize
-from src.line_analyzer import calculate_distance, calculate_skeleton, get_thickness
+from src.line_analyzer import calculate_distance, calculate_skeleton, get_thickness, build_overlay_thickness
 from pathlib import Path
 import sys
 import cv2
@@ -57,8 +57,22 @@ def main():
 
             for left, right, count in zip(edges[:-1], edges[1:], counts):
                 print(f"{left:.0f}–{right:.0f} px: {count}")
+
+            thickness_overlay = build_overlay_thickness(image, distance, skeleton)
+
+            cv2.imwrite(drawing_dir / "thickness.png", thickness_overlay)
+
+            print("Визуализация толщины сохранена.")
         else:
             print("Линии не обнаружены.")
+
+        thin_count = np.sum(thickness < 4)
+        medium_count = np.sum((thickness >= 4) & (thickness < 8))
+        thick_count = np.sum(thickness >= 8)
+
+        print(f"Тонкие: {thin_count}")
+        print(f"Средние: {medium_count}")
+        print(f"Толстые: {thick_count}")
 
         distance_png = cv2.normalize(distance, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
 
