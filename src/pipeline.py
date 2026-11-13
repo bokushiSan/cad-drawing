@@ -7,6 +7,7 @@ from src.line_analyzer import calculate_distance, calculate_skeleton
 from src.contour_extractor import get_contour
 from src.component_analyzer import get_components, filter_components
 from src.roughness_detector import remove_roughness_symbol
+from src.vectorizer import vectorize
 
 
 def run_drawing(drawing: Path, output_dir: Path):
@@ -27,6 +28,10 @@ def run_drawing(drawing: Path, output_dir: Path):
 
     filtered = remove_roughness_symbol(filtered, labels, stats)
 
+    segments = vectorize(filtered, eps=2.0)
+
+    print(f"Количество отрезков: {len(segments)}")  
+
     overlay = image.copy()
     overlay[filtered > 0] = (0, 0, 255)
 
@@ -34,8 +39,20 @@ def run_drawing(drawing: Path, output_dir: Path):
     contour_only[filtered > 0] = (0, 0, 255)
 
     output_dir.mkdir(parents=True, exist_ok=True)
+    
+    vector_overlay = image.copy()
+    vector_only = np.full_like(image, 255)
+
+    for x1, y1, x2, y2 in segments:
+        p1 = (int(x1), int(y1))
+        p2 = (int(x2), int(y2))
+
+        cv2.line(vector_overlay, p1, p2, (0, 0, 255), 2)
+        cv2.line(vector_only, p1, p2, (0, 0, 255), 2)
+    
     cv2.imwrite(output_dir / "overlay.png", overlay)
     cv2.imwrite(str(output_dir / "contour_only.png"), contour_only)
+    cv2.imwrite(str(output_dir / "vector_only.png"), vector_only)
 
     print(f"Чертеж детали {drawing.stem} прочитан.")
     print(f"Размер полученного массива: {image.shape}.")
