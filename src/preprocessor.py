@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+from typing import Tuple
 
 
 def to_grayscale(image: np.ndarray) -> np.ndarray:
@@ -16,7 +17,7 @@ def to_grayscale(image: np.ndarray) -> np.ndarray:
     return grayscale
 
 
-def binarize(image_gray: np.ndarray) -> np.ndarray:
+def binarize(image_gray: np.ndarray) -> Tuple[float, np.ndarray]:
     """
     Преобразование изображения из оттенков серого в бинарное методом Оцу
 
