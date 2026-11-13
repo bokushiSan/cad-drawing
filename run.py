@@ -22,7 +22,7 @@ def main():
     print(f"Найдено {len(drawings)} чертежей в папке {input_dir}")
 
     for drawing in drawings:
-        result_dir = output_dir / drawing.relative_to(input_dir)
+        result_dir = output_dir / drawing.relative_to(input_dir).parent
         run_drawing(drawing, result_dir)
 
 

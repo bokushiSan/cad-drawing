@@ -6,6 +6,7 @@ from src.preprocessor import to_grayscale, binarize
 from src.line_analyzer import calculate_distance, calculate_skeleton
 from src.contour_extractor import get_contour
 from src.component_analyzer import get_components, filter_components
+from src.roughness_detector import remove_roughness_symbol
 
 
 def run_drawing(drawing: Path, output_dir: Path):
@@ -24,11 +25,17 @@ def run_drawing(drawing: Path, output_dir: Path):
 
     filtered = filter_components(labels, stats, min_area=500, max_rel_size=0.9)
 
+    filtered = remove_roughness_symbol(filtered, labels, stats)
+
     overlay = image.copy()
     overlay[filtered > 0] = (0, 0, 255)
 
+    contour_only = np.full_like(image, 255)
+    contour_only[filtered > 0] = (0, 0, 255)
+
     output_dir.mkdir(parents=True, exist_ok=True)
     cv2.imwrite(output_dir / "overlay.png", overlay)
+    cv2.imwrite(str(output_dir / "contour_only.png"), contour_only)
 
     print(f"Чертеж детали {drawing.stem} прочитан.")
     print(f"Размер полученного массива: {image.shape}.")
