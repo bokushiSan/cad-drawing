@@ -67,7 +67,7 @@ def build_overlay_thickness(image: np.ndarray, distance_image: np.ndarray, skele
     for y, x in zip(ys, xs):
         th = thickness_map[y, x]
         # эвристически подобраные интервалы
-        if th > 8:
+        if th >= 8:
             color = (0, 0, 255)
         elif th < 4:  
             color = (255, 0, 0)

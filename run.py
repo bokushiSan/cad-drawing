@@ -2,6 +2,7 @@ from src.drawing_finder import get_drawings
 from src.image_loader import load_image
 from src.preprocessor import to_grayscale, binarize
 from src.line_analyzer import calculate_distance, calculate_skeleton, get_thickness, build_overlay_thickness
+from src.contour_extractor import get_contour
 from pathlib import Path
 import sys
 import cv2
@@ -43,6 +44,27 @@ def main():
         distance = calculate_distance(image_binary)
         skeleton = calculate_skeleton(image_binary)
         thickness = get_thickness(distance, skeleton)
+
+        countours = get_contour(
+            distance,
+            skeleton,
+            min_thickness=4,
+        )
+        cv2.imwrite(drawing_dir / "contour.png", cv2.bitwise_not(countours))
+
+        overlay = image.copy()
+        overlay[countours > 0] = (0, 0, 255)
+        cv2.imwrite(drawing_dir / "contour_overlay.png", overlay)
+
+        skeleton_count = np.count_nonzero(skeleton)
+        candidates_count = np.count_nonzero(countours)
+
+        print(f"Пикселей скелета: {skeleton_count}")
+        print(f"Пикселей кандидатов: {candidates_count}")
+
+        if skeleton_count > 0:
+            ratio = candidates_count / skeleton_count * 100
+            print(f"Сохранено пикселей скелета: {ratio:.2f}%")
 
         if thickness.size > 0:
             print("Линии обнаружены.")
