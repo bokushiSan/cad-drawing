@@ -96,9 +96,7 @@ def review_contour(
 
     for path in [original_path, contour_path]:
         content.append(
-            {"type": "image_url", "image_url": {
-                "url": encode_image(path)
-                }
+            {"type": "image_url", "image_url": {"url": encode_image(path)}
         })
 
     thinking_modes = (

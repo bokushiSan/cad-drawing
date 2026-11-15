@@ -3,6 +3,7 @@ import sys
 from src.pipeline import run_drawing
 from src.drawing_finder import get_drawings
 from src.logger import create_logger, close_logger
+from src.report import save_report
 
 
 def main():
@@ -22,8 +23,10 @@ def main():
 
     print(f"Найдено {len(drawings)} чертежей в папке {input_dir}")
 
+    results = []
+
     for drawing in drawings:
-        result_dir = output_dir / drawing.relative_to(input_dir).parent
+        result_dir = output_dir / drawing.relative_to(input_dir).parent / drawing.stem
         result_dir.mkdir(parents=True, exist_ok=True)
 
         logger = create_logger(result_dir / "log.txt")
@@ -35,13 +38,21 @@ def main():
             verdict = "red"
             reason = f"Ошибка обработки: {e}"
             logger.exception(reason)
-            print(f"{reason}")
+            print(f"{reason = }")
             (result_dir / "verdict.txt").write_text(f"{verdict}: {reason}", encoding="utf-8")
 
         finally:
             close_logger(logger)
 
+        results.append({
+            "drawing": str(drawing.relative_to(input_dir)),
+            "verdict": verdict,
+            "reason": reason,
+        })
+
         print(f"{drawing.name}: {verdict}")
+
+    save_report(results, output_dir)
 
 
 if __name__ == "__main__":
