@@ -2,6 +2,7 @@ from pathlib import Path
 import sys
 from src.pipeline import run_drawing
 from src.drawing_finder import get_drawings
+from src.logger import create_logger, close_logger
 
 
 def main():
@@ -23,7 +24,24 @@ def main():
 
     for drawing in drawings:
         result_dir = output_dir / drawing.relative_to(input_dir).parent
-        run_drawing(drawing, result_dir)
+        result_dir.mkdir(parents=True, exist_ok=True)
+
+        logger = create_logger(result_dir / "log.txt")
+
+        try:
+            verdict, reason = run_drawing(drawing, result_dir, logger)
+
+        except Exception as e:
+            verdict = "red"
+            reason = f"Ошибка обработки: {e}"
+            logger.exception(reason)
+            print(f"{reason}")
+            (result_dir / "verdict.txt").write_text(f"{verdict}: {reason}", encoding="utf-8")
+
+        finally:
+            close_logger(logger)
+
+        print(f"{drawing.name}: {verdict}")
 
 
 if __name__ == "__main__":

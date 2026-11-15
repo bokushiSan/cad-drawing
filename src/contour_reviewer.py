@@ -2,9 +2,9 @@ import os
 import json
 import base64
 from pathlib import Path
-
 from dotenv import load_dotenv
 from openai import OpenAI
+import logging
 
 
 PROMPT_PATH = (Path(__file__).resolve().parent.parent / "prompt_review.txt")
@@ -60,6 +60,7 @@ def parse_response(raw_response: str) -> dict:
 def review_contour(
     original_path: Path,
     contour_path: Path,
+    logger: logging.Logger,
     thinking: bool = True,
 ) -> tuple[str, str]:
     """
@@ -81,6 +82,14 @@ def review_contour(
         base_url=os.environ["BASE_URL"],
     )
 
+    model = os.environ["MODEL_NAME"]
+
+    logger.info("VLM")
+    logger.info(f"Модель: {model}")
+    logger.info(f"Путь к изображению чертежа: {original_path}")
+    logger.info(f"Путь к изображению контуров: {contour_path}")
+    logger.info(f"Промпт: {PROMPT}")
+
     content = [
         {"type": "text", "text": PROMPT}
     ]
@@ -100,7 +109,8 @@ def review_contour(
         thinking_modes, start=1
     ):
 
-        print(f"Попытка {attempt}, thinking={mode}")
+        logger.info(f"Попытка номер {attempt}")
+        logger.info(f"Режим рассуждения: {mode}")
 
         response = client.chat.completions.create(
             model=os.environ["MODEL_NAME"],
@@ -115,12 +125,12 @@ def review_contour(
         choice = response.choices[0]
         raw_response = choice.message.content
 
-        print(f"Finish reason: {choice.finish_reason}")
-        print(response.usage)
-        print(raw_response)
+        logger.info(f"Причина завершения: {choice.finish_reason}")
+        logger.info(f"Токены: {response.usage}")
+        logger.info(f"Ответ модели:\n{raw_response}")
 
         if choice.finish_reason == "length":
-            print("Исчерпан лимит токенов")
+            logger.warning("Исчерпан лимит токенов")
             continue
 
         if choice.finish_reason != "stop":
